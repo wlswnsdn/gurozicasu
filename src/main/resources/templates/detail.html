@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <title>detail</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: url('https://media.istockphoto.com/id/1165696410/ko/%EC%82%AC%EC%A7%84/%EA%B5%90%EC%9C%A1-%EB%B0%8F-%EB%8F%85%EC%84%9C-%EA%B0%9C%EB%85%90-%EA%B5%90%EC%8B%A4-%EC%B9%A0%ED%8C%90-%EB%B0%B0%EA%B2%BD%EC%9D%98-%EB%82%98%EB%AC%B4-%ED%85%8C%EC%9D%B4%EB%B8%94%EC%97%90-%EB%8B%A4%EC%B1%84%EB%A1%9C%EC%9A%B4-%EC%B1%85%EC%9D%98-%EA%B7%B8%EB%A3%B9.jpg?s=612x612&w=0&k=20&c=ZpUwcI7nHSTIFBVMUPE1oo1ALoINJCDXDs32zmusA98=') no-repeat center center fixed;
+      background-size: cover;
+      margin: 0;
+      color: #333;
+      padding: 3% 10%;
+    }
+
+    table {
+      width: 100%;
+      margin: 20px 0;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background-color: rgba(47, 93, 153, 0.7);
+      color: white;
+    }
+
+    td {
+      background-color: rgba(255, 255, 255, 0.8);
+    }
+
+    button {
+      background-color: #2F5D99;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: 700;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #24497a;
+    }
+
+    #comment-write, #comment-list {
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 80%;
+      margin-right: 10px;
+    }
+
+
+  </style>
+</head>
+<body>
+<table>
+  <tr>
+    <th>id</th>
+    <td th:text="${board.id}"></td>
+  </tr>
+  <tr>
+    <th>title</th>
+    <td th:text="${board.boardTitle}"></td>
+  </tr>
+  <tr>
+    <th>writer</th>
+    <td th:text="${board.boardWriter}"></td>
+  </tr>
+  <tr>
+    <th>date</th>
+    <td th:text="${board.boardCreatedTime}"></td>
+  </tr>
+  <tr>
+    <th>hits</th>
+    <td th:text="${board.boardHits}"></td>
+  </tr>
+  <tr>
+    <th>contents</th>
+    <td th:text="${board.boardContents}"></td>
+  </tr>
+  <tr th:if="${board.fileAttached == 1}">
+    <th>image</th>
+    <td><img th:src="@{|/upload/${board.storedFileName}|}" alt=""></td>
+  </tr>
+</table>
+<button onclick="listReq()">목록</button>
+<button onclick="updateReq()">수정</button>
+<button onclick="deleteReq()">삭제</button>
+
+<!--댓글 작성 부분-->
+<div id="comment write">
+  <input type="text" id="commentWriter" placeholder="작성자">
+  <input type="text" id="commentContents" placeholder="내용">
+  <button id="comment-wrt-btn" onclick="commentWrite()">댓글 작성</button>
+
+
+</div>
+
+<!--그냥 댓글 볼 때-->
+<!--댓글 출력 부분-->
+<div id="comment-list">
+  <table>
+    <tr>
+      <th>댓글번호</th>
+      <th>작성자</th>
+      <th>내용</th>
+      <th>작성시간</th>
+    </tr>
+    <tr th:each="comment: ${commentList}">
+      <td th:text="${comment.id}"></td>
+      <td th:text="${comment.commentWriter}"></td>
+      <td th:text="${comment.commentContents}"></td>
+      <td th:text="${comment.commentCreatedTime}"></td>
+
+    </tr>
+  </table>
+
+</div>
+</body>
+<script th:inline="javascript">
+
+  const commentWrite = () =>{
+    const writer=document.getElementById("commentWriter").value;
+    const contents=document.getElementById("commentContents").value;
+    console.log("작성자: ", writer);
+    console.log("내용: ", contents);
+    const id = [[${board.id}]]; // 게시글 번호
+    $.ajax({
+      // 요청 방식: post, 요청 주소: /comment/save, 요청 데이터: 작성자, 작성내용, 게시글 번호
+      type: "post",
+      url: "/comment/save",
+      data: {
+        "commentWriter" : writer,
+        "commentContents" : contents,
+        "boardId" : id
+      },
+      // 댓글 추가해서 보이는 목록
+      success: function (res) {
+        console.log("요청성공", res);
+        let output = "<table>";
+        output += "<tr><th>댓글번호</th>";
+        output += "<th>작성자</th>";
+        output += "<th>내용</th>";
+        output += "<th>작성시간</th></tr>";
+        for (let i in res) {
+          output += "<tr>";
+          output += "<td>" + res[i].id + "</td>";
+          output += "<td>" + res[i].commentWriter + "</td>";
+          output += "<td>" + res[i].commentContents + "</td>";
+          output += "<td>" + res[i].commentCreatedTime + "</td>";
+          output += "</tr>";
+        }
+        output += "</table>";
+        // 이 내용들을 위에 comment-list div>에 넣겠다
+        document.getElementById('comment-list').innerHTML = output;
+        // 출력하고나서 작성자, 내용 쓰는 칸 비움
+        document.getElementById('commentWriter').value = '';
+        document.getElementById('commentContents').value = '';
+      },
+      error: function (err){
+        console.log("요청 실패", err);
+      }
+    });
+  }
+  const listReq = () => {
+    console.log("목록 요청");
+    const page = [[${page}]];
+    location.href = "/board/paging?page="+page;
+  }
+  const updateReq = () => {
+    console.log("수정 요청");
+    const id = [[${board.id}]];
+    location.href = "/board/update/" + id;
+  }
+  const deleteReq = () => {
+    console.log("삭제 요청");
+    const id = [[${board.id}]];
+    location.href = "/board/delete/" + id;
+  }
+</script>
+</html>
